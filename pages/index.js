@@ -3,6 +3,8 @@ import MainGrid from '../src/components/MainGrid';
 import Box from '../src/components/Box';
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
+import nookies from 'nookies';
+import jwt from 'jsonwebtoken';
 
 function ProfileSidebar(prop) {
   return (
@@ -20,10 +22,10 @@ function ProfileSidebar(prop) {
   )
 }
 
-export default function Home() {
+export default function Home(props) {
   const [comunidades, setComunidades] = useState([]);
   const [seguidores, setSeguidores] = useState([]);
-  const githubUser = 'pconeglian';  
+  const githubUser = props.githubUser;  
   const pessoasFavoritas = [
     'juunegreiros',
     'omariosouto',
@@ -72,8 +74,7 @@ export default function Home() {
     })
   }, []); /* << */
   
-  function ProfileRelationsBox(props) {
-    console.log(props);
+  function ProfileRelationsBox(props) {    
     return (
       <ProfileRelationsBoxWrapper>
         <h2 className="smallTitle">
@@ -233,4 +234,30 @@ export default function Home() {
       </MainGrid>
     </>
   )
+}
+
+export async function getServerSideProps(context) {
+  const userToken = nookies.get(context).USER_TOKEN;  
+  const { isAuthenticated } = await fetch('https://alurakut-pconeglian.vercel.app/api/auth', {
+    headers: {
+      Authorization: userToken
+    }
+  })
+  .then((resposta) => resposta.json())
+
+  if(!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false
+      }
+    }
+  }
+
+  const { githubUser } = jwt.decode(userToken);
+  return {
+    props: {
+      githubUser
+    }
+  }
 }
